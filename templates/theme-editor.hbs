@@ -1,0 +1,33 @@
+{{!-- Custom theme color editor --}}
+<div class="scs-theme-form">
+
+  <div class="scs-theme-toolbar">
+    <label>{{localize "SCS.Theme.StartFrom"}}</label>
+    <select data-action="seedFromPreset">
+      <option value="">{{localize "SCS.Theme.ChoosePreset"}}</option>
+      {{#each presetOptions as |opt|}}
+        <option value="{{opt.id}}">{{opt.label}}</option>
+      {{/each}}
+    </select>
+    <button type="button" class="scs-link" data-action="resetVars">
+      <i class="fas fa-undo"></i> {{localize "SCS.Theme.Clear"}}
+    </button>
+  </div>
+
+  <div class="scs-theme-vars">
+    {{#each vars as |v|}}
+      <div class="scs-theme-row">
+        <label>{{v.label}}</label>
+        <div class="scs-color-pair">
+          <input type="color" data-var="{{v.key}}" value="{{v.value}}">
+          <input type="text" name="vars.{{v.key}}" data-var="{{v.key}}" value="{{v.value}}" spellcheck="false">
+        </div>
+      </div>
+    {{/each}}
+  </div>
+
+  <footer class="scs-theme-footer">
+    <p class="scs-hint">{{localize "SCS.Theme.Hint"}}</p>
+    <button type="submit"><i class="fas fa-save"></i> {{localize "SCS.Theme.Save"}}</button>
+  </footer>
+</div>

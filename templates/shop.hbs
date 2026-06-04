@@ -1,0 +1,229 @@
+{{!-- Scorpious Customizable Shop — paneled Buy/Sell layout --}}
+<div class="scs-grid" data-scs-theme="{{themeId}}" data-side="{{layoutSide}}">
+
+  {{!-- TOP-LEFT: merchant avatar (1/3 w, 2/3 h) --}}
+  <section class="scs-panel scs-area-avatar">
+    <header class="scs-panel-header">
+      <span>{{localize "SCS.Shop.Merchant"}}</span>
+      <span class="scs-pill">NPC</span>
+    </header>
+    <div class="scs-panel-body scs-avatar-body">
+      <div class="scs-avatar-img" style="background-image:url('{{merchant.img}}')"></div>
+      <div class="scs-merchant-name">{{merchant.name}}</div>
+      {{#if merchant.subtitle}}<div class="scs-merchant-sub">{{merchant.subtitle}}</div>{{/if}}
+    </div>
+  </section>
+
+  {{!-- BOTTOM-LEFT: Buy/Sell controls (1/3 w, 1/3 h) --}}
+  <section class="scs-panel scs-area-controls">
+    <header class="scs-panel-header">
+      <span>{{localize "SCS.Shop.Mode"}}</span>
+      {{#if isGM}}
+        <a class="scs-icon-btn" data-action="openConfig" title="{{localize 'SCS.Config.Title'}}">
+          <i class="fas fa-sliders-h"></i>
+        </a>
+      {{/if}}
+    </header>
+    <div class="scs-panel-body scs-controls-body">
+      {{#if isGM}}
+        <button type="button" class="scs-share-btn" data-action="showToPlayers">
+          <i class="fas fa-users"></i> {{localize "SCS.Shop.ShowToPlayers"}}
+        </button>
+      {{/if}}
+      <div class="scs-mode-toggle">
+        <button type="button" class="scs-mode buy {{#if isBuy}}active{{/if}}"
+                data-action="setMode" data-mode="buy">
+          <i class="fas fa-coins"></i> {{localize "SCS.Shop.Buy"}}
+        </button>
+        <button type="button" class="scs-mode sell {{#unless isBuy}}active{{/unless}}"
+                data-action="setMode" data-mode="sell">
+          <i class="fas fa-hand-holding-usd"></i> {{localize "SCS.Shop.Sell"}}
+        </button>
+      </div>
+      <div class="scs-price-info">
+        {{#if isBuy}}
+          {{localize "SCS.Shop.BuyingFromMerchant"}}<br>
+          {{localize "SCS.Shop.Markup"}}: <b>{{markupPct}}%</b>
+        {{else}}
+          {{localize "SCS.Shop.SellingToMerchant"}}<br>
+          {{localize "SCS.Shop.Payout"}}: <b>{{sellPct}}%</b>
+        {{/if}}
+      </div>
+      {{#unless hasBuyer}}
+        <div class="scs-warn"><i class="fas fa-exclamation-triangle"></i> {{localize "SCS.Shop.NoBuyerHint"}}</div>
+      {{/unless}}
+    </div>
+  </section>
+
+  {{!-- RIGHT COLUMN: inventory (top 1/2) + cart (bottom 1/2) --}}
+  <div class="scs-area-right">
+
+    {{!-- TOP-RIGHT: inventory list OR item detail --}}
+    <section class="scs-panel">
+      {{#if detail}}
+        <header class="scs-panel-header">
+          <a class="scs-icon-btn scs-back" data-action="closeDetail" title="{{localize 'SCS.Shop.BackToList'}}">
+            <i class="fas fa-arrow-left"></i>
+          </a>
+          <span class="scs-detail-title">{{detail.name}}</span>
+          <span class="scs-pill">{{detail.typeLabel}}</span>
+          <button type="button" class="scs-detail-close" data-action="closeDetail">
+            <i class="fas fa-times"></i> {{localize "SCS.Shop.Close"}}
+          </button>
+        </header>
+        <div class="scs-panel-body scs-inventory-body scs-detail">
+          <div class="scs-detail-top">
+            <img class="scs-detail-img" src="{{detail.img}}" alt="">
+            <div class="scs-detail-meta">
+              <div class="scs-detail-name">{{detail.name}}</div>
+              <div class="scs-detail-price">
+                {{detail.priceLabel}}: <b>{{detail.price}} {{currencyLabel}}</b>
+              </div>
+              <div class="scs-detail-stock">{{localize "SCS.Item.InStock"}}: {{detail.stock}}</div>
+              <button type="button" class="scs-add-btn scs-detail-add"
+                      data-action="addItem" data-item-id="{{detail.itemId}}" data-side="{{detail.side}}">
+                <i class="fas fa-cart-plus"></i> {{localize "SCS.Item.AddToCart"}}
+              </button>
+            </div>
+          </div>
+          {{#if detail.stats.length}}
+            <div class="scs-detail-stats">
+              {{#each detail.stats as |s|}}
+                <div class="scs-stat"><span class="scs-stat-label">{{s.label}}</span><span class="scs-stat-value">{{s.value}}</span></div>
+              {{/each}}
+            </div>
+          {{/if}}
+          <div class="scs-detail-desc">
+            <div class="scs-detail-desc-head">{{localize "SCS.Item.Description"}}</div>
+            {{#if detail.descriptionHTML}}
+              <div class="scs-detail-desc-body">{{{detail.descriptionHTML}}}</div>
+            {{else}}
+              <div class="scs-empty">{{localize "SCS.Item.NoDescription"}}</div>
+            {{/if}}
+          </div>
+        </div>
+      {{else}}
+        <header class="scs-panel-header">
+          <span>{{inventoryTitle}}</span>
+          <span class="scs-pill">{{inventory.length}}</span>
+        </header>
+        <div class="scs-panel-body scs-inventory-body">
+          {{#unless canRead}}
+            <div class="scs-empty">{{localize "SCS.Shop.NoAccess"}}</div>
+          {{else}}
+          {{#if inventory.length}}
+            <table class="scs-table">
+              <thead>
+                <tr>
+                  <th>{{localize "SCS.Shop.Item"}}</th>
+                  <th class="num">{{localize "SCS.Shop.Qty"}}</th>
+                  <th class="num">{{localize "SCS.Shop.Price"}}</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each inventory as |row|}}
+                  <tr data-item-id="{{row.id}}" data-side="{{#if ../isBuy}}buy{{else}}sell{{/if}}" data-action="showDetail">
+                    <td>
+                      <span class="scs-item-name">
+                        <img class="scs-item-icon" src="{{row.img}}" alt="">
+                        {{row.name}}
+                      </span>
+                    </td>
+                    <td class="num">
+                      {{#if row.infinite}}<span class="scs-infinite">&infin;</span>{{else}}{{row.qty}}{{/if}}
+                    </td>
+                    <td class="num">{{row.unit}} {{../currencyLabel}}</td>
+                    <td class="num">
+                      <button type="button" class="scs-add-btn" data-action="addItem"
+                              data-item-id="{{row.id}}" data-side="{{#if ../isBuy}}buy{{else}}sell{{/if}}">
+                        {{#if ../isBuy}}{{localize "SCS.Shop.Buy"}}{{else}}{{localize "SCS.Shop.Sell"}}{{/if}}
+                      </button>
+                    </td>
+                  </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          {{else}}
+            <div class="scs-empty">
+              {{#if isBuy}}{{localize "SCS.Shop.EmptyStock"}}{{else}}{{localize "SCS.Shop.NothingToSell"}}{{/if}}
+            </div>
+          {{/if}}
+          {{/unless}}
+        </div>
+      {{/if}}
+    </section>
+
+    {{!-- BOTTOM-RIGHT: cart + total --}}
+    <section class="scs-panel scs-cart">
+      <header class="scs-panel-header">
+        <span>{{localize "SCS.Shop.Cart"}}</span>
+        {{#unless cartEmpty}}
+          <a class="scs-icon-btn" data-action="clearCart" title="{{localize 'SCS.Shop.Clear'}}">
+            <i class="fas fa-trash"></i>
+          </a>
+        {{/unless}}
+      </header>
+      <div class="scs-panel-body">
+        <div class="scs-cart-rows">
+          {{#if cartEmpty}}
+            <div class="scs-empty">{{localize "SCS.Shop.CartEmpty"}}</div>
+          {{else}}
+            {{#if buying.length}}
+              <div class="scs-cart-section buy">
+                <div class="scs-cart-section-head"><i class="fas fa-coins"></i> {{localize "SCS.Shop.Buying"}}</div>
+                {{#each buying as |line|}}
+                  <div class="scs-cart-line" data-key="{{line.key}}">
+                    <img class="scs-item-icon" src="{{line.img}}" alt="">
+                    <span class="scs-cart-name" data-action="showDetail" data-item-id="{{line.itemId}}" data-side="{{line.side}}">{{line.name}}</span>
+                    <span class="scs-qty-step">
+                      <button type="button" data-action="decLine" data-key="{{line.key}}">&minus;</button>
+                      <span class="scs-qty">{{line.qty}}</span>
+                      <button type="button" data-action="incLine" data-key="{{line.key}}">+</button>
+                    </span>
+                    <span class="scs-cart-line-total">{{line.lineTotalLabel}} {{../currencyLabel}}</span>
+                    <a class="scs-remove" data-action="removeLine" data-key="{{line.key}}"><i class="fas fa-times"></i></a>
+                  </div>
+                {{/each}}
+              </div>
+            {{/if}}
+            {{#if selling.length}}
+              <div class="scs-cart-section sell">
+                <div class="scs-cart-section-head"><i class="fas fa-hand-holding-usd"></i> {{localize "SCS.Shop.Selling"}}</div>
+                {{#each selling as |line|}}
+                  <div class="scs-cart-line" data-key="{{line.key}}">
+                    <img class="scs-item-icon" src="{{line.img}}" alt="">
+                    <span class="scs-cart-name" data-action="showDetail" data-item-id="{{line.itemId}}" data-side="{{line.side}}">{{line.name}}</span>
+                    <span class="scs-qty-step">
+                      <button type="button" data-action="decLine" data-key="{{line.key}}">&minus;</button>
+                      <span class="scs-qty">{{line.qty}}</span>
+                      <button type="button" data-action="incLine" data-key="{{line.key}}">+</button>
+                    </span>
+                    <span class="scs-cart-line-total">{{line.lineTotalLabel}} {{../currencyLabel}}</span>
+                    <a class="scs-remove" data-action="removeLine" data-key="{{line.key}}"><i class="fas fa-times"></i></a>
+                  </div>
+                {{/each}}
+              </div>
+            {{/if}}
+          {{/if}}
+        </div>
+
+        <div class="scs-cart-footer">
+          <div class="scs-totals">
+            {{#if buying.length}}<div class="scs-subtotal buy">{{localize "SCS.Shop.Buying"}}: <b>{{buyTotalLabel}} {{currencyLabel}}</b></div>{{/if}}
+            {{#if selling.length}}<div class="scs-subtotal sell">{{localize "SCS.Shop.Selling"}}: <b>{{sellTotalLabel}} {{currencyLabel}}</b></div>{{/if}}
+            <div class="scs-net scs-net-{{netDirection}}">
+              {{#if (scs-eq netDirection "pay")}}{{localize "SCS.Shop.TotalPay"}}: <span>{{netLabel}} {{currencyLabel}}</span>{{/if}}
+              {{#if (scs-eq netDirection "receive")}}{{localize "SCS.Shop.TotalReceive"}}: <span>{{netLabel}} {{currencyLabel}}</span>{{/if}}
+              {{#if (scs-eq netDirection "even")}}{{localize "SCS.Shop.EvenTrade"}}{{/if}}
+            </div>
+          </div>
+          <button type="button" class="scs-checkout" data-action="checkout" {{#if cartEmpty}}disabled{{/if}}>
+            {{#if (scs-eq netDirection "receive")}}{{localize "SCS.Shop.CompleteSale"}}{{else}}{{localize "SCS.Shop.CompleteDeal"}}{{/if}}
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>

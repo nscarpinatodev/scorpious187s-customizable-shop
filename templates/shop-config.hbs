@@ -1,0 +1,88 @@
+{{!-- Per-actor shop configuration --}}
+<div class="scs-config-form">
+
+  <div class="scs-config-section">
+    <label class="scs-check">
+      <input type="checkbox" name="isShop" {{checked isShop}}>
+      <span>{{localize "SCS.Config.IsShop"}}</span>
+    </label>
+    <p class="scs-hint">{{localize "SCS.Config.IsShopHint"}}</p>
+    <label class="scs-check" style="margin-top:8px;">
+      <input type="checkbox" name="grantAccess" {{checked grantAccess}}>
+      <span>{{localize "SCS.Config.GrantAccess"}}</span>
+    </label>
+    <p class="scs-hint">{{localize "SCS.Config.GrantAccessHint"}}</p>
+  </div>
+
+  <div class="scs-config-section scs-grid2">
+    <div class="scs-field">
+      <label>{{localize "SCS.Config.ShopName"}}</label>
+      <input type="text" name="shopName" value="{{shopName}}" placeholder="{{actorName}}">
+    </div>
+    <div class="scs-field">
+      <label>{{localize "SCS.Config.ThemeOverride"}}</label>
+      <select name="themeOverride">
+        {{#each themeChoices as |label id|}}
+          <option value="{{id}}" {{#if (scs-eq id ../themeOverride)}}selected{{/if}}>{{label}}</option>
+        {{/each}}
+      </select>
+    </div>
+    <div class="scs-field">
+      <label>{{localize "SCS.Config.Markup"}}</label>
+      <div class="scs-input-suffix">
+        <input type="number" name="markup" value="{{markup}}" step="0.05" min="0">
+        <span>&times; {{localize "SCS.Config.BaseValue"}}</span>
+      </div>
+      <p class="scs-hint">{{localize "SCS.Config.MarkupHint"}}</p>
+    </div>
+    <div class="scs-field">
+      <label>{{localize "SCS.Config.SellRate"}}</label>
+      <div class="scs-input-suffix">
+        <input type="number" name="sellRate" value="{{sellRate}}" step="0.05" min="0">
+        <span>&times; {{localize "SCS.Config.BaseValue"}}</span>
+      </div>
+      <p class="scs-hint">{{localize "SCS.Config.SellRateHint"}}</p>
+    </div>
+  </div>
+
+  <div class="scs-config-section">
+    <div class="scs-config-section-head">
+      <span>{{localize "SCS.Config.Items"}}</span>
+      <a class="scs-link" data-action="openThemeEditor"><i class="fas fa-palette"></i> {{localize "SCS.Config.EditCustomTheme"}}</a>
+    </div>
+    <div class="scs-config-items">
+      <table class="scs-table">
+        <thead>
+          <tr>
+            <th>{{localize "SCS.Shop.Item"}}</th>
+            <th class="num">{{localize "SCS.Config.BaseValue"}}</th>
+            <th class="ctr">{{localize "SCS.Config.Infinite"}}</th>
+            <th class="ctr">{{localize "SCS.Config.FixedPrice"}}</th>
+            <th class="ctr">{{localize "SCS.Config.Hide"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each items as |it|}}
+            <tr>
+              <td>
+                <span class="scs-item-name"><img class="scs-item-icon" src="{{it.img}}" alt="">{{it.name}}</span>
+              </td>
+              <td class="num">{{it.baseValue}} {{../currencyLabel}}</td>
+              <td class="ctr"><input type="checkbox" name="items.{{it.id}}.infinite" {{checked it.infinite}}></td>
+              <td class="ctr scs-fixed-cell">
+                <input type="checkbox" name="items.{{it.id}}.fixed" {{checked it.fixed}}>
+                <input type="number" name="items.{{it.id}}.fixedPrice" value="{{it.fixedPrice}}" step="0.01" min="0" placeholder="—">
+              </td>
+              <td class="ctr"><input type="checkbox" name="items.{{it.id}}.noSell" {{checked it.noSell}}></td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{#unless items.length}}<div class="scs-empty">{{localize "SCS.Config.NoItems"}}</div>{{/unless}}
+    </div>
+  </div>
+
+  <footer class="scs-config-footer">
+    <button type="submit"><i class="fas fa-save"></i> {{localize "SCS.Config.Save"}}</button>
+  </footer>
+</div>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customizable Shop — Layout Preview</title>
+<style>
+  :root {
+    --scs-bg-primary:#f5e6c8; --scs-bg-secondary:#ede0c4; --scs-bg-header:#c9a96e;
+    --scs-bg-item:#faf3e0; --scs-bg-item-hover:#f0e8d0;
+    --scs-text-primary:#3d2b1f; --scs-text-secondary:#6b4c35; --scs-text-header:#2a1a0e;
+    --scs-accent:#8b4513; --scs-accent-hover:#a0522d;
+    --scs-border:#c9a96e; --scs-border-light:#e0d0a8; --scs-shadow:rgba(61,43,31,.3);
+    --scs-badge-bg:#8b4513; --scs-badge-text:#faf3e0;
+    --scs-btn-bg:#8b4513; --scs-btn-text:#faf3e0; --scs-btn-hover:#a0522d;
+    --scs-buy:#55aa55; --scs-sell:#aa3333; --scs-infinite:#2e8b57;
+    --scs-font-heading:'Palatino Linotype','Book Antiqua',serif;
+    --scs-font-body:'Georgia','Times New Roman',serif; --scs-radius:4px;
+  }
+  /* right-panel palette: falls back to normal panel unless theme overrides it */
+  .scs-area-right .scs-panel{
+    --_rbg:var(--scs-bg-right,var(--scs-bg-primary));
+    --_rtext:var(--scs-text-right,var(--scs-text-primary));
+    --_rborder:var(--scs-border-right,var(--scs-border));
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:#23262b;font-family:var(--scs-font-body);color:var(--scs-text-primary);}
+  body{display:flex;flex-direction:column;align-items:center;padding:22px 16px;gap:14px;}
+  .demo-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#1c1c1c;color:#ddd;
+    padding:10px 16px;border-radius:8px;font-family:"Segoe UI",sans-serif;font-size:13px;}
+  .demo-bar strong{color:#fff;} .demo-bar .note{color:#888;font-style:italic;}
+  .demo-bar select{background:#2b2b2b;color:#eee;border:1px solid #555;padding:6px 10px;border-radius:6px;font-size:13px;}
+
+  .scs-window{width:min(980px,96vw);height:640px;background:var(--scs-bg-secondary);
+    border:2px solid var(--scs-border);border-radius:calc(var(--scs-radius) + 4px);
+    box-shadow:0 8px 28px var(--scs-shadow);display:flex;flex-direction:column;overflow:hidden;}
+  .scs-titlebar{background:var(--scs-bg-header);color:var(--scs-text-header);font-family:var(--scs-font-heading);
+    padding:9px 14px;font-size:16px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;
+    border-bottom:2px solid var(--scs-accent);}
+  .scs-titlebar .meta{font-size:12px;font-weight:normal;opacity:.85;}
+
+  .scs-grid{flex:1;display:grid;grid-template-columns:1fr 2fr;grid-template-rows:2fr 1fr;
+    grid-template-areas:"avatar right" "controls right";gap:10px;padding:10px;min-height:0;}
+  .scs-grid[data-side="right"]{grid-template-columns:2fr 1fr;grid-template-areas:"right avatar" "right controls";}
+  .scs-area-avatar{grid-area:avatar;} .scs-area-controls{grid-area:controls;}
+  .scs-area-right{grid-area:right;display:grid;grid-template-rows:1fr 1fr;gap:10px;min-height:0;}
+
+  .scs-panel{background:var(--scs-bg-primary);border:1px solid var(--scs-border);border-radius:var(--scs-radius);
+    box-shadow:0 2px 8px var(--scs-shadow);display:flex;flex-direction:column;overflow:hidden;min-height:0;min-width:0;}
+  .scs-panel-header{flex:0 0 auto;background:var(--scs-bg-header);color:var(--scs-text-header);
+    border-bottom:1px solid var(--scs-border);padding:6px 10px;font-family:var(--scs-font-heading);
+    font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .scs-panel-body{flex:1;overflow:auto;min-height:0;background:var(--scs-bg-primary);}
+  .scs-pill{display:inline-block;padding:1px 8px;border-radius:10px;background:var(--scs-badge-bg);
+    color:var(--scs-badge-text);font-size:11px;font-weight:bold;}
+  .scs-icon-btn{color:var(--scs-text-header);cursor:pointer;opacity:.85;}.scs-icon-btn:hover{opacity:1;}
+
+  .scs-avatar-body{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px;height:100%;}
+  .scs-avatar-img{width:100%;flex:1;min-height:0;border-radius:var(--scs-radius);border:1px solid var(--scs-border);
+    background:linear-gradient(135deg,var(--scs-bg-item-hover),var(--scs-bg-header));display:flex;align-items:center;
+    justify-content:center;color:var(--scs-text-secondary);font-size:34px;}
+  .scs-merchant-name{font-family:var(--scs-font-heading);font-size:17px;font-weight:bold;text-align:center;}
+  .scs-merchant-sub{font-size:12px;color:var(--scs-text-secondary);margin-top:-2px;}
+
+  .scs-controls-body{padding:10px;display:flex;flex-direction:column;gap:10px;}
+  .scs-mode-toggle{display:flex;border:1px solid var(--scs-border);border-radius:var(--scs-radius);overflow:hidden;}
+  .scs-mode{flex:1;border:none;padding:10px 0;cursor:pointer;font-family:var(--scs-font-body);font-size:14px;
+    font-weight:bold;background:var(--scs-bg-item);color:var(--scs-text-secondary);}
+  .scs-mode.buy.active{background:var(--scs-buy);color:#fff;} .scs-mode.sell.active{background:var(--scs-sell);color:#fff;}
+  .scs-price-info{font-size:12px;color:var(--scs-text-secondary);line-height:1.5;}.scs-price-info b{color:var(--scs-text-primary);}
+  .scs-share-btn{background:var(--scs-bg-item);color:var(--scs-text-primary);border:1px solid var(--scs-accent);
+    border-radius:var(--scs-radius);padding:6px 8px;font-size:12px;font-weight:bold;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;}
+  .scs-share-btn:hover{background:var(--scs-accent);color:var(--scs-btn-text);}
+
+  .scs-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .scs-table th,.scs-table td{padding:6px 10px;text-align:left;}
+  .scs-table thead th{position:sticky;top:0;background:var(--scs-bg-header);color:var(--scs-text-header);
+    font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--scs-border);}
+  .scs-table tbody tr{border-bottom:1px solid var(--scs-border-light);}
+  .scs-table tbody tr:hover{background:var(--scs-bg-item-hover);cursor:pointer;}
+  .scs-table td.num,.scs-table th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .scs-item-name{display:flex;align-items:center;gap:8px;}
+  .scs-item-icon{width:22px;height:22px;border-radius:4px;flex:0 0 auto;background:var(--scs-bg-item);
+    border:1px solid var(--scs-border);display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .scs-infinite{color:var(--scs-infinite);font-weight:bold;font-size:16px;}
+  .scs-add-btn{background:var(--scs-btn-bg);color:var(--scs-btn-text);border:none;border-radius:4px;
+    padding:2px 10px;font-size:12px;font-weight:bold;cursor:pointer;}.scs-add-btn:hover{background:var(--scs-btn-hover);}
+
+  /* right-panel palette application */
+  .scs-area-right .scs-panel{background:var(--_rbg);}
+  .scs-area-right .scs-panel-body{background:var(--_rbg);color:var(--_rtext);}
+  .scs-area-right .scs-table tbody tr{color:var(--_rtext);border-bottom-color:var(--_rborder);}
+  .scs-area-right .scs-item-icon{border-color:var(--_rborder);}
+
+  /* inline detail */
+  .scs-detail-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .scs-detail-close{background:var(--scs-btn-bg);color:var(--scs-btn-text);border:none;border-radius:4px;
+    padding:2px 9px;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap;}
+  .scs-detail-close:hover{background:var(--scs-btn-hover);}
+  .scs-detail{padding:12px;display:flex;flex-direction:column;gap:12px;}
+  .scs-detail-top{display:flex;gap:12px;}
+  .scs-detail-img{width:96px;height:96px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:46px;
+    border:1px solid var(--_rborder);border-radius:var(--scs-radius);background:rgba(0,0,0,.12);}
+  .scs-detail-meta{display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .scs-detail-name{font-family:var(--scs-font-heading);font-size:17px;font-weight:bold;}
+  .scs-detail-price b{color:var(--scs-accent);} .scs-detail-stock{font-size:12px;opacity:.85;}
+  .scs-detail-add{align-self:flex-start;margin-top:4px;padding:5px 12px;}
+  .scs-detail-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 14px;
+    border-top:1px solid var(--_rborder);border-bottom:1px solid var(--_rborder);padding:8px 0;}
+  .scs-stat{display:flex;justify-content:space-between;gap:8px;font-size:12px;}
+  .scs-stat-label{opacity:.8;} .scs-stat-value{font-weight:bold;text-align:right;}
+  .scs-detail-desc-head{font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:bold;
+    margin-bottom:4px;opacity:.85;}
+  .scs-detail-desc-body{font-size:13px;line-height:1.5;}
+
+  .scs-cart .scs-panel-body{display:flex;flex-direction:column;}
+  .scs-cart-rows{flex:1;overflow:auto;min-height:0;padding:4px 0;}
+  .scs-cart-section-head{font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:bold;
+    padding:4px 10px;color:var(--scs-text-secondary);}
+  .scs-cart-section.buy .scs-cart-section-head{color:var(--scs-buy);}
+  .scs-cart-section.sell .scs-cart-section-head{color:var(--scs-sell);}
+  .scs-cart-line{display:grid;grid-template-columns:22px 1fr auto auto auto;align-items:center;gap:8px;
+    padding:3px 10px;font-size:13px;}
+  .scs-cart-line:hover{background:var(--_rbg);filter:brightness(1.06);}
+  .scs-cart-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;
+    text-decoration:underline dotted transparent;}
+  .scs-cart-name:hover{text-decoration-color:currentColor;}
+  .scs-qty-step{display:inline-flex;align-items:center;gap:4px;}
+  .scs-qty-step button{width:20px;height:20px;line-height:1;border:1px solid var(--_rborder);background:var(--scs-bg-item);
+    color:var(--scs-text-primary);border-radius:4px;cursor:pointer;font-weight:bold;padding:0;}
+  .scs-qty-step .scs-qty{min-width:18px;text-align:center;}
+  .scs-cart-line-total{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .scs-remove{color:var(--scs-sell);cursor:pointer;opacity:.75;}.scs-remove:hover{opacity:1;}
+  .scs-cart-footer{flex:0 0 auto;border-top:1px solid var(--scs-border);background:var(--scs-bg-secondary);
+    padding:8px 12px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;}
+  .scs-totals{font-size:12px;color:var(--scs-text-secondary);line-height:1.5;}
+  .scs-subtotal.buy b{color:var(--scs-buy);} .scs-subtotal.sell b{color:var(--scs-sell);}
+  .scs-net{font-family:var(--scs-font-heading);font-size:16px;font-weight:bold;color:var(--scs-text-primary);margin-top:2px;}
+  .scs-net span{color:var(--scs-accent);} .scs-net.receive span{color:var(--scs-buy);}
+  .scs-checkout{background:var(--scs-accent);color:var(--scs-btn-text);border:none;padding:9px 16px;
+    border-radius:var(--scs-radius);font-size:14px;font-weight:bold;cursor:pointer;white-space:nowrap;}
+  .scs-checkout:hover{background:var(--scs-accent-hover);}
+  .scs-empty{padding:18px;text-align:center;color:var(--scs-text-secondary);font-style:italic;}
+</style>
+</head>
+<body>
+
+  <div class="demo-bar">
+    <strong>Theme:</strong>
+    <select id="theme-select"></select>
+    <strong style="margin-left:10px;">Avatar/Controls side:</strong>
+    <select id="side-select"><option value="left">Left</option><option value="right">Right</option></select>
+    <span class="note">— try <b>Mass Effect</b> for the orange right panels.</span>
+  </div>
+
+  <div class="scs-window">
+    <div class="scs-titlebar">
+      <span id="shop-title">Gilda's Curiosities</span>
+      <span class="meta">Shop · System-Agnostic · NPC Inventory</span>
+    </div>
+    <div class="scs-grid" id="shop-grid" data-side="left">
+      <section class="scs-panel scs-area-avatar">
+        <header class="scs-panel-header"><span>Merchant</span><span class="scs-pill">NPC</span></header>
+        <div class="scs-avatar-body">
+          <div class="scs-avatar-img">🧙‍♀️</div>
+          <div class="scs-merchant-name">Gilda Brassbottom</div>
+          <div class="scs-merchant-sub">Tinker &amp; Trinket Dealer</div>
+        </div>
+      </section>
+
+      <section class="scs-panel scs-area-controls">
+        <header class="scs-panel-header"><span>Mode</span><span class="scs-icon-btn" title="Configure (GM)">⚙</span></header>
+        <div class="scs-controls-body">
+          <button class="scs-share-btn" title="GM only">👥 Show to Players</button>
+          <div class="scs-mode-toggle">
+            <button class="scs-mode buy active" data-mode="buy">🪙 Buy</button>
+            <button class="scs-mode sell" data-mode="sell">🤝 Sell</button>
+          </div>
+          <div class="scs-price-info" id="price-info"></div>
+        </div>
+      </section>
+
+      <div class="scs-area-right">
+        <section class="scs-panel" id="inv-panel"></section>
+        <section class="scs-panel scs-cart">
+          <header class="scs-panel-header"><span>Cart</span><span class="scs-icon-btn" id="clear-cart" title="Clear">🗑</span></header>
+          <div class="scs-panel-body">
+            <div class="scs-cart-rows" id="cart-rows"></div>
+            <div class="scs-cart-footer">
+              <div class="scs-totals" id="cart-totals"></div>
+              <button class="scs-checkout" id="checkout">Complete Deal</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---- Theme presets (scs vars). Mass Effect carries right-panel overrides. ---- */
+const THEMES = [
+ ["Fantasy",[
+  ["fantasy-parchment","Parchment",{}],
+  ["fantasy-dark","Dark Fantasy",{"--scs-bg-primary":"#1a1614","--scs-bg-secondary":"#111010","--scs-bg-header":"#0d0b0a","--scs-bg-item":"#211e1b","--scs-bg-item-hover":"#2a2622","--scs-text-primary":"#d4c5a9","--scs-text-secondary":"#8c7a63","--scs-text-header":"#e8d8b8","--scs-accent":"#c17f24","--scs-accent-hover":"#d4922c","--scs-border":"#3d342a","--scs-border-light":"#4a3e33","--scs-badge-bg":"#c17f24","--scs-badge-text":"#1a1614","--scs-btn-bg":"#c17f24","--scs-btn-text":"#1a1614","--scs-btn-hover":"#d4922c","--scs-buy":"#4a9955","--scs-sell":"#993333","--scs-infinite":"#4a9955","--scs-radius":"2px"}],
+  ["fantasy-arcane","Arcane",{"--scs-bg-primary":"#0f0b1a","--scs-bg-secondary":"#09060f","--scs-bg-header":"#150d2b","--scs-bg-item":"#160c2a","--scs-bg-item-hover":"#1e1238","--scs-text-primary":"#c8b8f0","--scs-text-secondary":"#7a6aaa","--scs-text-header":"#ddd0ff","--scs-accent":"#8855dd","--scs-accent-hover":"#a070ee","--scs-border":"#3a2060","--scs-border-light":"#4a2880","--scs-badge-bg":"#8855dd","--scs-badge-text":"#ddd0ff","--scs-btn-bg":"#8855dd","--scs-btn-text":"#ddd0ff","--scs-btn-hover":"#a070ee","--scs-buy":"#55cc99","--scs-sell":"#cc3366","--scs-infinite":"#55cc99","--scs-radius":"6px"}],
+  ["fantasy-steampunk","Steampunk",{"--scs-bg-primary":"#2a2018","--scs-bg-secondary":"#1e170f","--scs-bg-header":"#150e08","--scs-bg-item":"#312618","--scs-bg-item-hover":"#3c2e1e","--scs-text-primary":"#e8d5a8","--scs-text-secondary":"#a08860","--scs-text-header":"#f0e0b0","--scs-accent":"#b87333","--scs-accent-hover":"#cc8844","--scs-border":"#5a4428","--scs-border-light":"#705538","--scs-badge-bg":"#b87333","--scs-badge-text":"#1e170f","--scs-btn-bg":"#b87333","--scs-btn-text":"#1e170f","--scs-btn-hover":"#cc8844","--scs-buy":"#88aa44","--scs-sell":"#993322","--scs-infinite":"#88aa44","--scs-font-body":"'Courier New',monospace","--scs-radius":"2px"}],
+ ]],
+ ["Sci-Fi",[
+  ["scifi-terminal","Terminal",{"--scs-bg-primary":"#0a0f0a","--scs-bg-secondary":"#060a06","--scs-bg-header":"#050805","--scs-bg-item":"#0d130d","--scs-bg-item-hover":"#112011","--scs-text-primary":"#00ee44","--scs-text-secondary":"#009922","--scs-text-header":"#00ff55","--scs-accent":"#00ff44","--scs-accent-hover":"#44ff77","--scs-border":"#00441a","--scs-border-light":"#006622","--scs-badge-bg":"#00ee44","--scs-badge-text":"#060a06","--scs-btn-bg":"#00ee44","--scs-btn-text":"#060a06","--scs-btn-hover":"#44ff77","--scs-buy":"#00ff44","--scs-sell":"#ff3333","--scs-infinite":"#00ff44","--scs-font-heading":"'Courier New',monospace","--scs-font-body":"'Courier New',monospace","--scs-radius":"0px"}],
+  ["scifi-holographic","Holographic",{"--scs-bg-primary":"#050d1a","--scs-bg-secondary":"#030810","--scs-bg-header":"#020508","--scs-bg-item":"#071428","--scs-bg-item-hover":"#0a1e3a","--scs-text-primary":"#7ad9f5","--scs-text-secondary":"#3a8caa","--scs-text-header":"#aaeeff","--scs-accent":"#00ccff","--scs-accent-hover":"#44ddff","--scs-border":"#0a4466","--scs-border-light":"#0f5580","--scs-badge-bg":"#00ccff","--scs-badge-text":"#030810","--scs-btn-bg":"#00ccff","--scs-btn-text":"#030810","--scs-btn-hover":"#44ddff","--scs-buy":"#00ffcc","--scs-sell":"#ff4444","--scs-infinite":"#00ffcc","--scs-font-heading":"'Segoe UI',sans-serif","--scs-font-body":"'Segoe UI',sans-serif"}],
+  ["scifi-star-wars","Star Wars",{"--scs-bg-primary":"#0d0d0d","--scs-bg-secondary":"#050505","--scs-bg-header":"#1a0000","--scs-bg-item":"#131313","--scs-bg-item-hover":"#1e1e1e","--scs-text-primary":"#ffe81f","--scs-text-secondary":"#aa9900","--scs-text-header":"#ffe81f","--scs-accent":"#ffe81f","--scs-accent-hover":"#fff066","--scs-border":"#443300","--scs-border-light":"#665500","--scs-badge-bg":"#ffe81f","--scs-badge-text":"#0d0d0d","--scs-btn-bg":"#ffe81f","--scs-btn-text":"#0d0d0d","--scs-btn-hover":"#fff066","--scs-buy":"#44cc66","--scs-sell":"#cc2200","--scs-infinite":"#44cc66","--scs-font-heading":"'Arial Narrow',sans-serif","--scs-font-body":"'Arial',sans-serif","--scs-radius":"2px"}],
+  ["scifi-mass-effect","Mass Effect",{"--scs-bg-primary":"#0b1520","--scs-bg-secondary":"#070e16","--scs-bg-header":"#04080e","--scs-bg-item":"#0f1c2e","--scs-bg-item-hover":"#142438","--scs-text-primary":"#88ccee","--scs-text-secondary":"#446688","--scs-text-header":"#aaddff","--scs-accent":"#00aaee","--scs-accent-hover":"#22bbff","--scs-border":"#0a2a44","--scs-border-light":"#0f3655","--scs-badge-bg":"#00aaee","--scs-badge-text":"#07080e","--scs-btn-bg":"#00aaee","--scs-btn-text":"#070e16","--scs-btn-hover":"#22bbff","--scs-buy":"#00ddaa","--scs-sell":"#ee2200","--scs-infinite":"#00ddaa","--scs-bg-right":"#160b04","--scs-text-right":"#ff8040","--scs-border-right":"#e06020","--scs-font-heading":"'Segoe UI',sans-serif","--scs-font-body":"'Segoe UI',sans-serif","--scs-radius":"3px"}],
+  ["scifi-fallout","Fallout",{"--scs-bg-primary":"#0c1a0c","--scs-bg-secondary":"#070f07","--scs-bg-header":"#040904","--scs-bg-item":"#0f1f0f","--scs-bg-item-hover":"#152815","--scs-text-primary":"#20c020","--scs-text-secondary":"#108010","--scs-text-header":"#30e030","--scs-accent":"#20c020","--scs-accent-hover":"#40e040","--scs-border":"#0a380a","--scs-border-light":"#0d4a0d","--scs-badge-bg":"#20c020","--scs-badge-text":"#070f07","--scs-btn-bg":"#20c020","--scs-btn-text":"#070f07","--scs-btn-hover":"#40e040","--scs-buy":"#20c020","--scs-sell":"#c02020","--scs-infinite":"#20c020","--scs-font-heading":"'Courier New',monospace","--scs-font-body":"'Courier New',monospace","--scs-radius":"0px"}],
+  ["scifi-cyberpunk","Cyberpunk",{"--scs-bg-primary":"#0a0510","--scs-bg-secondary":"#050208","--scs-bg-header":"#0f0020","--scs-bg-item":"#100818","--scs-bg-item-hover":"#180c22","--scs-text-primary":"#ff2d78","--scs-text-secondary":"#aa1a55","--scs-text-header":"#ff55aa","--scs-accent":"#ff2d78","--scs-accent-hover":"#ff66aa","--scs-border":"#440033","--scs-border-light":"#660044","--scs-badge-bg":"#ff2d78","--scs-badge-text":"#050208","--scs-btn-bg":"#ff2d78","--scs-btn-text":"#050208","--scs-btn-hover":"#ff66aa","--scs-buy":"#00ccff","--scs-sell":"#ee4400","--scs-infinite":"#00ccff","--scs-font-heading":"'Arial Black',sans-serif","--scs-font-body":"'Arial',sans-serif","--scs-radius":"0px"}],
+ ]],
+ ["Horror",[
+  ["horror-gothic","Gothic Horror",{"--scs-bg-primary":"#150d0d","--scs-bg-secondary":"#0d0808","--scs-bg-header":"#0a0505","--scs-bg-item":"#1c1010","--scs-bg-item-hover":"#251515","--scs-text-primary":"#d4b8b8","--scs-text-secondary":"#8a6464","--scs-text-header":"#e8cccc","--scs-accent":"#881111","--scs-accent-hover":"#aa1e1e","--scs-border":"#3a1818","--scs-border-light":"#4a2020","--scs-badge-bg":"#881111","--scs-badge-text":"#e8cccc","--scs-btn-bg":"#881111","--scs-btn-text":"#e8cccc","--scs-btn-hover":"#aa1e1e","--scs-buy":"#558855","--scs-sell":"#660000","--scs-infinite":"#558855","--scs-radius":"3px"}],
+  ["horror-eldritch","Eldritch / Cosmic",{"--scs-bg-primary":"#0a090f","--scs-bg-secondary":"#060509","--scs-bg-header":"#040308","--scs-bg-item":"#0f0d18","--scs-bg-item-hover":"#161222","--scs-text-primary":"#b8a8cc","--scs-text-secondary":"#6a5a80","--scs-text-header":"#ccbbee","--scs-accent":"#6633aa","--scs-accent-hover":"#7744cc","--scs-border":"#2a1a44","--scs-border-light":"#3a2255","--scs-badge-bg":"#6633aa","--scs-badge-text":"#ccbbee","--scs-btn-bg":"#6633aa","--scs-btn-text":"#ccbbee","--scs-btn-hover":"#7744cc","--scs-buy":"#558855","--scs-sell":"#660033","--scs-infinite":"#558855","--scs-radius":"4px"}],
+ ]],
+ ["Modern / Action",[
+  ["modern-military","Military / Tactical",{"--scs-bg-primary":"#141a0f","--scs-bg-secondary":"#0c1008","--scs-bg-header":"#0a0d07","--scs-bg-item":"#1a2213","--scs-bg-item-hover":"#212c19","--scs-text-primary":"#a8c888","--scs-text-secondary":"#6a8844","--scs-text-header":"#c0e0a0","--scs-accent":"#6aaa33","--scs-accent-hover":"#88cc44","--scs-border":"#2a3a1a","--scs-border-light":"#384e22","--scs-badge-bg":"#6aaa33","--scs-badge-text":"#0c1008","--scs-btn-bg":"#6aaa33","--scs-btn-text":"#0c1008","--scs-btn-hover":"#88cc44","--scs-buy":"#6aaa33","--scs-sell":"#aa3333","--scs-infinite":"#6aaa33","--scs-font-heading":"'Arial Narrow',sans-serif","--scs-font-body":"'Arial',sans-serif","--scs-radius":"2px"}],
+  ["modern-western","Western",{"--scs-bg-primary":"#2a1f10","--scs-bg-secondary":"#1e1508","--scs-bg-header":"#150e05","--scs-bg-item":"#33261a","--scs-bg-item-hover":"#3d2e20","--scs-text-primary":"#e8d8a8","--scs-text-secondary":"#a08850","--scs-text-header":"#f0e4b8","--scs-accent":"#cc6600","--scs-accent-hover":"#dd7711","--scs-border":"#5a3a18","--scs-border-light":"#704a22","--scs-badge-bg":"#cc6600","--scs-badge-text":"#1e1508","--scs-btn-bg":"#cc6600","--scs-btn-text":"#1e1508","--scs-btn-hover":"#dd7711","--scs-buy":"#88aa44","--scs-sell":"#993322","--scs-infinite":"#88aa44","--scs-radius":"2px"}],
+ ]],
+];
+const PARCHMENT = {"--scs-bg-primary":"#f5e6c8","--scs-bg-secondary":"#ede0c4","--scs-bg-header":"#c9a96e","--scs-bg-item":"#faf3e0","--scs-bg-item-hover":"#f0e8d0","--scs-text-primary":"#3d2b1f","--scs-text-secondary":"#6b4c35","--scs-text-header":"#2a1a0e","--scs-accent":"#8b4513","--scs-accent-hover":"#a0522d","--scs-border":"#c9a96e","--scs-border-light":"#e0d0a8","--scs-badge-bg":"#8b4513","--scs-badge-text":"#faf3e0","--scs-btn-bg":"#8b4513","--scs-btn-text":"#faf3e0","--scs-btn-hover":"#a0522d","--scs-buy":"#55aa55","--scs-sell":"#aa3333","--scs-infinite":"#2e8b57","--scs-font-heading":"'Palatino Linotype','Book Antiqua',serif","--scs-font-body":"'Georgia',serif","--scs-radius":"4px","--scs-bg-right":"","--scs-text-right":"","--scs-border-right":""};
+const ALL_VARS = new Set(Object.keys(PARCHMENT));
+
+/* ---- Sample data ---- */
+const merchant = [
+  {id:"m1",icon:"🧪",name:"Healing Draught",base:25,qty:Infinity,
+    desc:"A ruby potion that knits wounds closed in seconds. Brewed fresh each morning.",
+    stats:{Type:"Consumable",Effect:"Restore 2d4+2 HP",Weight:"0.5 lb",Rarity:"Common"}},
+  {id:"m2",icon:"🗡️",name:"Brass Cutlass",base:75,qty:3,
+    desc:"A wickedly curved blade with an ornate brass guard. Favored by sky-pirates.",
+    stats:{Type:"Weapon",Damage:"1d8 slashing","Damage Type":"Slashing",Weight:"3 lb",Rarity:"Uncommon"}},
+  {id:"m3",icon:"🏮",name:"Everlit Lantern",base:40,qty:Infinity,
+    desc:"Never needs oil; its flame is bound by a minor fire elemental.",
+    stats:{Type:"Gear",Range:"30 ft bright",Weight:"2 lb",Rarity:"Common"}},
+  {id:"m4",icon:"🛡️",name:"Bulwark Shield",base:120,qty:2,
+    desc:"Heavy steel kite shield embossed with a roaring griffon.",
+    stats:{Type:"Armor","Armor Class":"+2 AC",Weight:"6 lb",Rarity:"Uncommon"}},
+  {id:"m5",icon:"💍",name:"Ring of Minor Warmth",base:150,qty:1,
+    desc:"Keeps the wearer comfortable in freezing conditions.",
+    stats:{Type:"Wondrous",Effect:"Resist cold weather",Rarity:"Rare"}},
+];
+const player = [
+  {id:"p1",icon:"⚔️",name:"Rusty Shortsword",base:10,qty:1,
+    desc:"Seen better days. The edge is more suggestion than threat.",
+    stats:{Type:"Weapon",Damage:"1d6 piercing",Weight:"2 lb",Rarity:"Common"}},
+  {id:"p2",icon:"💎",name:"Uncut Amethyst",base:50,qty:4,
+    desc:"A fist-sized violet gem, rough but valuable to the right buyer.",
+    stats:{Type:"Treasure",Weight:"0.2 lb",Rarity:"Uncommon"}},
+  {id:"p3",icon:"🧥",name:"Traveler's Cloak",base:15,qty:1,
+    desc:"Weatherworn but warm. Smells faintly of woodsmoke.",
+    stats:{Type:"Apparel","Armor Class":"+0",Weight:"1 lb",Rarity:"Common"}},
+];
+
+const cfg={markup:1.2,sellRate:0.5,cur:"gp"};
+let mode="buy";
+let detail=null; // {side,id}
+const cart=new Map(); // `${side}::${id}` -> qty
+const fmt=n=>{const r=Math.round(n*100)/100;return Number.isInteger(r)?r:r.toFixed(2);};
+const src=s=>s==="buy"?merchant:player;
+const unit=(s,it)=>Math.round(it.base*(s==="buy"?cfg.markup:cfg.sellRate));
+
+function applyTheme(vars){
+  const merged={...PARCHMENT,...vars};
+  const root=document.documentElement;
+  for(const k of ALL_VARS){ if(merged[k]) root.style.setProperty(k,merged[k]); else root.style.removeProperty(k); }
+}
+
+function renderInventory(){
+  const panel=document.getElementById("inv-panel");
+  if(detail){ panel.innerHTML=detailHTML(); wireDetail(); return; }
+  const list=src(mode);
+  const title=mode==="buy"?"Inventory — For Sale":"Selling from — Auric Vale (PC)";
+  panel.innerHTML=`<header class="scs-panel-header"><span>${title}</span><span class="scs-pill">${list.length}</span></header>
+   <div class="scs-panel-body"><table class="scs-table"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th></th></tr></thead><tbody>${
+     list.map(it=>`<tr data-id="${it.id}">
+       <td><span class="scs-item-name"><span class="scs-item-icon">${it.icon}</span>${it.name}</span></td>
+       <td class="num">${it.qty===Infinity?'<span class="scs-infinite">∞</span>':it.qty}</td>
+       <td class="num">${unit(mode,it)} ${cfg.cur}</td>
+       <td class="num"><button class="scs-add-btn" data-add="${it.id}">${mode==="buy"?"Buy":"Sell"}</button></td>
+     </tr>`).join("")}</tbody></table></div>`;
+  panel.querySelectorAll("tr[data-id]").forEach(tr=>tr.addEventListener("click",e=>{
+    if(e.target.dataset.add){ addToCart(mode,e.target.dataset.add); }
+    else { detail={side:mode,id:tr.dataset.id}; renderInventory(); }
+  }));
+}
+
+function detailHTML(){
+  const it=src(detail.side).find(i=>i.id===detail.id);
+  const statRows=Object.entries(it.stats).map(([k,v])=>`<div class="scs-stat"><span class="scs-stat-label">${k}</span><span class="scs-stat-value">${v}</span></div>`).join("");
+  return `<header class="scs-panel-header"><span class="scs-icon-btn" id="back">←</span><span class="scs-detail-title">${it.name}</span><span class="scs-pill">${it.stats.Type||"Item"}</span><button class="scs-detail-close" id="close-detail">✕ Close</button></header>
+   <div class="scs-panel-body scs-detail">
+     <div class="scs-detail-top">
+       <div class="scs-detail-img">${it.icon}</div>
+       <div class="scs-detail-meta">
+         <div class="scs-detail-name">${it.name}</div>
+         <div class="scs-detail-price">${detail.side==="buy"?"Buy price":"Sell price"}: <b>${unit(detail.side,it)} ${cfg.cur}</b></div>
+         <div class="scs-detail-stock">In stock: ${it.qty===Infinity?"Unlimited":it.qty}</div>
+         <button class="scs-add-btn scs-detail-add" data-add="${it.id}">🛒 Add to Cart</button>
+       </div>
+     </div>
+     <div class="scs-detail-stats">${statRows}</div>
+     <div><div class="scs-detail-desc-head">Description</div><div class="scs-detail-desc-body">${it.desc}</div></div>
+   </div>`;
+}
+function wireDetail(){
+  const close=()=>{detail=null;renderInventory();};
+  document.getElementById("back").addEventListener("click",close);
+  document.getElementById("close-detail").addEventListener("click",close);
+  document.querySelector("[data-add]")?.addEventListener("click",()=>addToCart(detail.side,detail.id));
+}
+
+function addToCart(side,id){
+  const it=src(side).find(i=>i.id===id);
+  const key=`${side}::${id}`;
+  const max=it.qty===Infinity?Infinity:it.qty;
+  const next=(cart.get(key)||0)+1;
+  if(next>max){ return; }
+  cart.set(key,next); renderCart();
+}
+function stepLine(key,d){
+  const n=(cart.get(key)||0)+d;
+  if(n<=0){cart.delete(key);} else {
+    const [side,id]=key.split("::"); const it=src(side).find(i=>i.id===id);
+    const max=it.qty===Infinity?Infinity:it.qty; if(n>max) return;
+    cart.set(key,n);
+  }
+  renderCart();
+}
+
+function renderCart(){
+  const rows=document.getElementById("cart-rows");
+  const buys=[],sells=[]; let bt=0,st=0;
+  for(const [key,qty] of cart){
+    const [side,id]=key.split("::"); const it=src(side).find(i=>i.id===id);
+    const line=unit(side,it)*qty; (side==="buy"?buys:sells).push({key,it,qty,line,side});
+    if(side==="buy") bt+=line; else st+=line;
+  }
+  const sec=(title,arr,cls)=>arr.length?`<div class="scs-cart-section ${cls}"><div class="scs-cart-section-head">${title}</div>${
+    arr.sort((a,b)=>a.it.name.localeCompare(b.it.name)).map(r=>`<div class="scs-cart-line">
+      <span class="scs-item-icon">${r.it.icon}</span>
+      <span class="scs-cart-name" data-detail="${r.side}:${r.it.id}">${r.it.name}</span>
+      <span class="scs-qty-step"><button data-dec="${r.key}">−</button><span class="scs-qty">${r.qty}</span><button data-inc="${r.key}">+</button></span>
+      <span class="scs-cart-line-total">${fmt(r.line)} ${cfg.cur}</span>
+      <span class="scs-remove" data-rm="${r.key}">✕</span></div>`).join("")}</div>`:"";
+  rows.innerHTML=(buys.length||sells.length)
+    ? sec("🪙 Buying",buys,"buy")+sec("🤝 Selling",sells,"sell")
+    : `<div class="scs-empty">Cart is empty — click an item's Buy/Sell button to add it.</div>`;
+
+  rows.querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>stepLine(b.dataset.inc,1));
+  rows.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>stepLine(b.dataset.dec,-1));
+  rows.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{cart.delete(b.dataset.rm);renderCart();});
+  rows.querySelectorAll("[data-detail]").forEach(s=>s.onclick=()=>{const [side,id]=s.dataset.detail.split(":");detail={side,id};renderInventory();});
+
+  const net=Math.round((bt-st)*100)/100;
+  const dir=net>0?"pay":net<0?"receive":"even";
+  document.getElementById("cart-totals").innerHTML=
+    (buys.length?`<div class="scs-subtotal buy">Buying: <b>${fmt(bt)} ${cfg.cur}</b></div>`:"")+
+    (sells.length?`<div class="scs-subtotal sell">Selling: <b>${fmt(st)} ${cfg.cur}</b></div>`:"")+
+    `<div class="scs-net ${dir}">${dir==="pay"?`Total to pay: <span>${fmt(net)} ${cfg.cur}</span>`:dir==="receive"?`You receive: <span>${fmt(-net)} ${cfg.cur}</span>`:"Even trade"}</div>`;
+  document.getElementById("checkout").textContent=dir==="receive"?"Complete Sale":"Complete Deal";
+}
+
+function setMode(m){
+  mode=m; detail=null;
+  document.querySelectorAll(".scs-mode").forEach(b=>b.classList.toggle("active",b.dataset.mode===m));
+  document.getElementById("price-info").innerHTML=m==="buy"
+    ? `Buying from merchant<br>Markup: <b>${Math.round(cfg.markup*100)}%</b> of base value`
+    : `Selling to merchant<br>Payout: <b>${Math.round(cfg.sellRate*100)}%</b> of base value`;
+  renderInventory();
+}
+
+/* theme dropdown */
+const sel=document.getElementById("theme-select");
+const flat={};
+for(const [cat,themes] of THEMES){
+  const og=document.createElement("optgroup");og.label=cat;
+  for(const [id,label,vars] of themes){ flat[id]=vars; const o=document.createElement("option");o.value=id;o.textContent=label;og.appendChild(o); }
+  sel.appendChild(og);
+}
+sel.value="fantasy-parchment";
+sel.addEventListener("change",()=>applyTheme(flat[sel.value]||{}));
+document.getElementById("side-select").addEventListener("change",e=>{
+  document.getElementById("shop-grid").dataset.side=e.target.value;
+});
+document.querySelectorAll(".scs-mode").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+document.getElementById("clear-cart").addEventListener("click",()=>{cart.clear();renderCart();});
+
+applyTheme({});
+setMode("buy");
+renderCart();
+</script>
+</body>
+</html>
