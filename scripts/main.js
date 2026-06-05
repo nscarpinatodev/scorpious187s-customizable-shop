@@ -50,7 +50,8 @@ Hooks.once('ready', async () => {
         if (!game.user.isGM || game.user.id !== primaryGM?.id) break;
 
         const requester = game.users.get(data.userId);
-        const buyer = game.actors.get(data.payload?.buyerId);
+        // Resolve by UUID (handles unlinked-token actors) with an id fallback.
+        const buyer = ShopApp._resolveActor(data.payload?.buyerUuid, data.payload?.buyerId);
         // Security: the requesting user must own the buyer actor.
         const allowed = requester && buyer && buyer.testUserPermission(requester, 'OWNER');
         const result = allowed
@@ -67,6 +68,15 @@ Hooks.once('ready', async () => {
       case SOCKET_TYPES.TXN_RESULT: {
         if (data.userId !== game.user.id) break;
         ShopApp.resolvePending(data.requestId, data.result);
+        break;
+      }
+      case SOCKET_TYPES.SHOP_UPDATED: {
+        const app = ShopApp.instances.get(data.merchantId);
+        if (!app?.rendered) break;
+        // Render now, then again shortly after to catch the item-change
+        // broadcast that may arrive just after this signal.
+        app.render();
+        setTimeout(() => { if (app.rendered) app.render(); }, 300);
         break;
       }
     }

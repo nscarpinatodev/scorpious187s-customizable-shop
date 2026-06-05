@@ -33,6 +33,9 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Pending player-initiated transactions awaiting a GM result, by requestId. */
   static _pending = new Map();
 
+  /** True while executeTransaction is mutating inventories; pauses re-renders. */
+  static _transacting = false;
+
   static DEFAULT_OPTIONS = {
     id: 'scs-shop',
     classes: ['scs-window', 'scs-shop'],
@@ -99,6 +102,18 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
     ShopApp.instances.set(actor.id, app);
     app.render(true);
     return app;
+  }
+
+  /**
+   * Resolve an actor by UUID (preferred — works for world actors and synthetic
+   * unlinked-token actors), falling back to a bare world-actor id.
+   */
+  static _resolveActor(uuid, id) {
+    if (uuid) {
+      const doc = fromUuidSync(uuid);
+      if (doc?.documentName === 'Actor') return doc;
+    }
+    return id ? game.actors.get(id) : null;
   }
 
   // ── Config accessors ───────────────────────────────────────────────────
@@ -265,6 +280,7 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
       // Follow Quest Tracker too — when QT is active it controls the theme.
       this._hookThemeQt = Hooks.on('sqt.themeChanged', reapplyTheme);
       this._hookActor = Hooks.on('updateActor', (doc) => {
+        if (ShopApp._transacting) return;
         if (doc.id === this.actor.id || doc.id === getActiveBuyerActor()?.id) this.render();
       });
       this._hookItem = Hooks.on('updateItem', (item) => this._maybeRefresh(item));
@@ -276,6 +292,9 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _maybeRefresh(item) {
+    // Hold off while a transaction is mutating inventories — executeTransaction
+    // issues a single refresh (and a SHOP_UPDATED broadcast) when it finishes.
+    if (ShopApp._transacting) return;
     const parentId = item.parent?.id;
     if (parentId === this.actor.id || parentId === getActiveBuyerActor()?.id) this.render();
   }
@@ -621,7 +640,13 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
     // Only side/itemId/qty are sent; the GM recomputes prices authoritatively.
     const lines = [...this._cart.values()].map(l => ({ side: l.side, itemId: l.itemId, qty: l.qty }));
-    const payload = { merchantId: this.actor.id, buyerId: buyer.id, lines };
+    // UUIDs (not bare ids) so the executor resolves the *same* actor instance we
+    // see — critical for unlinked tokens, whose item ids differ from the world actor.
+    const payload = {
+      merchantId: this.actor.id, merchantUuid: this.actor.uuid,
+      buyerId: buyer.id, buyerUuid: buyer.uuid,
+      lines,
+    };
 
     // GMs execute directly; players relay the request to an active GM.
     const result = game.user.isGM
@@ -676,9 +701,9 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
    * modify both actors (the GM). Recomputes all prices from live documents;
    * never trusts client-supplied prices. Returns { ok, message?, net?, currency? }.
    */
-  static async executeTransaction({ merchantId, buyerId, lines }) {
-    const merchant = game.actors.get(merchantId);
-    const buyer = game.actors.get(buyerId);
+  static async executeTransaction({ merchantId, merchantUuid, buyerId, buyerUuid, lines }) {
+    const merchant = ShopApp._resolveActor(merchantUuid, merchantId);
+    const buyer = ShopApp._resolveActor(buyerUuid, buyerId);
     if (!merchant || !buyer) return { ok: false, message: game.i18n.localize('SCS.Warn.TxnFailed') };
 
     const preset = ShopApp.presetNow();
@@ -713,17 +738,46 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
       if (cfg?.adjustMerchantCurrency) await adjustWealth(preset, merchant, net).catch(() => {});
     }
 
-    for (const l of buys) {
-      const item = merchant.items.get(l.itemId);
-      await ShopApp._giveItem(buyer, item, l.qty);
-      if (!item.getFlag(MODULE_ID, FLAGS.INFINITE)) await ShopApp._takeItem(merchant, item, l.qty);
-    }
-    for (const l of sells) {
-      const item = buyer.items.get(l.itemId);
-      await ShopApp._giveItem(merchant, item, l.qty);
-      await ShopApp._takeItem(buyer, item, l.qty);
+    // Suppress the document-change re-renders that every open shop window would
+    // otherwise fire on each create/delete during this loop. Those re-renders,
+    // multiplied across viewers, run mid-`await` and were preventing the
+    // merchant-side removals from completing. We refresh once at the end.
+    ShopApp._transacting = true;
+    try {
+      // Resolve every item document up front, before any create/delete mutates
+      // the collections we're iterating, so no reference goes stale mid-loop.
+      const buyOps = buys
+        .map(l => ({ item: merchant.items.get(l.itemId), qty: l.qty }))
+        .filter(o => o.item);
+      const sellOps = sells
+        .map(l => ({ item: buyer.items.get(l.itemId), qty: l.qty }))
+        .filter(o => o.item);
+
+      for (const { item, qty } of buyOps) {
+        const infinite = !!item.getFlag(MODULE_ID, FLAGS.INFINITE);
+        try {
+          await ShopApp._giveItem(buyer, item, qty);
+          if (!infinite) await ShopApp._takeItem(merchant, item, qty);
+        } catch (err) {
+          console.error(`${MODULE_ID} | buy op failed for "${item?.name}"`, err);
+        }
+      }
+      for (const { item, qty } of sellOps) {
+        try {
+          await ShopApp._giveItem(merchant, item, qty);
+          await ShopApp._takeItem(buyer, item, qty);
+        } catch (err) {
+          console.error(`${MODULE_ID} | sell op failed for "${item?.name}"`, err);
+        }
+      }
+    } finally {
+      ShopApp._transacting = false;
     }
 
+    // Refresh the executor's own open window now that the guard is lifted, and
+    // tell every other client viewing this shop to refresh its stock display.
+    ShopApp.instances.get(merchantId)?.render();
+    game.socket.emit(SOCKET_NAME, { type: SOCKET_TYPES.SHOP_UPDATED, merchantId });
     return { ok: true, net, currency: baseLabel(preset) };
   }
 

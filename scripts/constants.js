@@ -10,9 +10,10 @@ export const SHOP_MODE = Object.freeze({
 
 /** Socket message types (module.<id> channel). */
 export const SOCKET_TYPES = Object.freeze({
-  OPEN_SHOP:   'openShop',    // GM → players: open this shop window
-  TXN_REQUEST: 'txnRequest',  // player → GM: please execute this transaction
-  TXN_RESULT:  'txnResult',   // GM → player: transaction outcome
+  OPEN_SHOP:    'openShop',     // GM → players: open this shop window
+  TXN_REQUEST:  'txnRequest',   // player → GM: please execute this transaction
+  TXN_RESULT:   'txnResult',    // GM → player: transaction outcome
+  SHOP_UPDATED: 'shopUpdated',  // executor → all: a shop's stock changed, re-render
 });
 
 /** World/client settings keys. */
