@@ -30,16 +30,16 @@
     <div class="scs-field">
       <label>{{localize "SCS.Config.Markup"}}</label>
       <div class="scs-input-suffix">
-        <input type="number" name="markup" value="{{markup}}" step="0.05" min="0">
-        <span>&times; {{localize "SCS.Config.BaseValue"}}</span>
+        <input type="number" name="markup" value="{{markupPct}}" step="5" min="0">
+        <span>% {{localize "SCS.Config.BaseValue"}}</span>
       </div>
       <p class="scs-hint">{{localize "SCS.Config.MarkupHint"}}</p>
     </div>
     <div class="scs-field">
       <label>{{localize "SCS.Config.SellRate"}}</label>
       <div class="scs-input-suffix">
-        <input type="number" name="sellRate" value="{{sellRate}}" step="0.05" min="0">
-        <span>&times; {{localize "SCS.Config.BaseValue"}}</span>
+        <input type="number" name="sellRate" value="{{sellRatePct}}" step="5" min="0">
+        <span>% {{localize "SCS.Config.BaseValue"}}</span>
       </div>
       <p class="scs-hint">{{localize "SCS.Config.SellRateHint"}}</p>
     </div>

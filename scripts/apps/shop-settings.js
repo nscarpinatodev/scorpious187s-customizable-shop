@@ -38,8 +38,8 @@ export class ShopSettingsApp extends HandlebarsApplicationMixin(ApplicationV2) {
       effectiveTheme: ThemeManager.resolveThemeId(),
       themeChoices: getThemeChoices(),
       themeLocked: ThemeManager.isControlledByQt(),
-      markup: defaults?.markup ?? DEFAULT_MARKUP,
-      sellRate: defaults?.sellRate ?? DEFAULT_SELL_RATE,
+      markupPct: Math.round((defaults?.markup ?? DEFAULT_MARKUP) * 100),
+      sellRatePct: Math.round((defaults?.sellRate ?? DEFAULT_SELL_RATE) * 100),
     };
   }
 
@@ -61,9 +61,10 @@ export class ShopSettingsApp extends HandlebarsApplicationMixin(ApplicationV2) {
       adjustMerchantCurrency: !!data.adjustMerchantCurrency,
       layoutSide: data.layoutSide === 'right' ? 'right' : 'left',
     });
+    // UI works in percent; the setting stores the multiplier (100% → 1.0).
     await game.settings.set(MODULE_ID, SETTINGS.DEFAULTS, {
-      markup: Number(data.markup) || DEFAULT_MARKUP,
-      sellRate: Number(data.sellRate) || DEFAULT_SELL_RATE,
+      markup: (Number(data.markup) / 100) || DEFAULT_MARKUP,
+      sellRate: (Number(data.sellRate) / 100) || DEFAULT_SELL_RATE,
     });
     await game.settings.set(MODULE_ID, SETTINGS.THEME, data.theme);
     ThemeManager.apply(data.theme);

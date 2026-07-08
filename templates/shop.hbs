@@ -19,6 +19,9 @@
     <header class="scs-panel-header">
       <span>{{localize "SCS.Shop.Mode"}}</span>
       {{#if isGM}}
+        <a class="scs-icon-btn" data-action="viewLog" title="{{localize 'SCS.Log.Button'}}">
+          <i class="fas fa-receipt"></i>
+        </a>
         <a class="scs-icon-btn" data-action="openConfig" title="{{localize 'SCS.Config.Title'}}">
           <i class="fas fa-sliders-h"></i>
         </a>

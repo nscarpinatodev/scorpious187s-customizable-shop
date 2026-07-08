@@ -60,6 +60,7 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
       checkout()                 { this._checkout(); },
       openConfig()               { this._openConfig(); },
       showToPlayers()            { this._showToPlayers(); },
+      viewLog()                  { this._viewLog(); },
     },
   };
 
@@ -713,6 +714,7 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     let buyTotal = 0;
     let sellTotal = 0;
+    const logLines = [];
 
     // Validate + price the buy side against the merchant's live stock.
     for (const l of buys) {
@@ -721,14 +723,18 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const infinite = !!item.getFlag(MODULE_ID, FLAGS.INFINITE);
       if (!infinite && ShopApp._quantity(item) < l.qty)
         return { ok: false, message: game.i18n.format('SCS.Warn.StockLimit', { name: item.name, max: ShopApp._quantity(item) }) };
-      buyTotal += ShopApp.buyUnitOf(merchant, preset, item) * l.qty;
+      const amount = roundCoin(ShopApp.buyUnitOf(merchant, preset, item) * l.qty);
+      buyTotal += amount;
+      logLines.push({ name: item.name, qty: l.qty, side: SHOP_MODE.BUY, amount });
     }
     // Validate + price the sell side against the buyer's live inventory.
     for (const l of sells) {
       const item = buyer.items.get(l.itemId);
       if (!item || ShopApp._quantity(item) < l.qty)
         return { ok: false, message: game.i18n.format('SCS.Warn.SellGone', { name: item?.name ?? l.itemId }) };
-      sellTotal += ShopApp.sellUnitOf(merchant, preset, item) * l.qty;
+      const amount = roundCoin(ShopApp.sellUnitOf(merchant, preset, item) * l.qty);
+      sellTotal += amount;
+      logLines.push({ name: item.name, qty: l.qty, side: SHOP_MODE.SELL, amount });
     }
 
     const net = roundCoin(buyTotal - sellTotal); // >0 buyer pays, <0 buyer receives
@@ -774,11 +780,96 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
       ShopApp._transacting = false;
     }
 
+    // Record the transaction on the merchant and feed the GM's chat log.
+    await ShopApp._recordTransaction(merchant, buyer, logLines, net, baseLabel(preset))
+      .catch(err => console.error(`${MODULE_ID} | failed to record transaction`, err));
+
     // Refresh the executor's own open window now that the guard is lifted, and
     // tell every other client viewing this shop to refresh its stock display.
     ShopApp.instances.get(merchantId)?.render();
     game.socket.emit(SOCKET_NAME, { type: SOCKET_TYPES.SHOP_UPDATED, merchantId });
     return { ok: true, net, currency: baseLabel(preset) };
+  }
+
+  // ── Transaction log ─────────────────────────────────────────────────────
+
+  /**
+   * Append a completed transaction to the merchant's log flag (newest first,
+   * capped) and whisper a summary card to the GMs so purchases can be followed
+   * live from the chat log.
+   */
+  static async _recordTransaction(merchant, buyer, lines, net, cur) {
+    if (!lines.length) return;
+    const entry = { t: Date.now(), buyer: buyer.name, lines, net, cur };
+
+    const log = foundry.utils.deepClone(merchant.getFlag(MODULE_ID, FLAGS.TXN_LOG) ?? []);
+    log.unshift(entry);
+    if (log.length > 200) log.length = 200; // cap so the flag can't grow unbounded
+    await merchant.setFlag(MODULE_ID, FLAGS.TXN_LOG, log);
+
+    const esc      = Handlebars.escapeExpression;
+    const shopName = merchant.getFlag(MODULE_ID, FLAGS.SHOP_NAME) || merchant.name;
+    const rows = lines.map(l => {
+      const verb = l.side === SHOP_MODE.BUY
+        ? game.i18n.localize('SCS.Log.Bought')
+        : game.i18n.localize('SCS.Log.Sold');
+      const qty = l.qty > 1 ? `${l.qty}× ` : '';
+      return `<li class="scs-txn-line ${l.side}">${verb} ${qty}${esc(l.name)} — ${formatPrice(l.amount)} ${esc(cur)}</li>`;
+    }).join('');
+    const netLine = net > 0
+      ? game.i18n.format('SCS.Log.NetPaid',     { amount: formatPrice(net),  cur })
+      : net < 0
+        ? game.i18n.format('SCS.Log.NetReceived', { amount: formatPrice(-net), cur })
+        : game.i18n.localize('SCS.Log.NetEven');
+
+    const gmIds = game.users.filter(u => u.isGM).map(u => u.id);
+    await ChatMessage.create({
+      content: `<div class="scs-txn-card">
+        <header class="scs-txn-header"><i class="fas fa-receipt"></i> ${esc(shopName)} — ${esc(buyer.name)}</header>
+        <ul class="scs-txn-lines">${rows}</ul>
+        <footer class="scs-txn-net">${netLine}</footer>
+      </div>`,
+      whisper: gmIds,
+      speaker: { alias: shopName },
+    });
+  }
+
+  /** GM: show this shop's transaction history in a dialog. */
+  _viewLog() {
+    const esc = Handlebars.escapeExpression;
+    const log = this.actor.getFlag(MODULE_ID, FLAGS.TXN_LOG) ?? [];
+
+    const body = log.length ? log.map(e => {
+      const when  = new Date(e.t).toLocaleString();
+      const rows  = (e.lines ?? []).map(l => {
+        const verb = l.side === SHOP_MODE.BUY
+          ? game.i18n.localize('SCS.Log.Bought')
+          : game.i18n.localize('SCS.Log.Sold');
+        const qty = l.qty > 1 ? `${l.qty}× ` : '';
+        return `<li class="scs-txn-line ${l.side}">${verb} ${qty}${esc(l.name)} — ${formatPrice(l.amount)} ${esc(e.cur)}</li>`;
+      }).join('');
+      return `<div class="scs-txn-entry">
+        <div class="scs-txn-entry-head"><strong>${esc(e.buyer)}</strong><span class="scs-txn-when">${esc(when)}</span></div>
+        <ul class="scs-txn-lines">${rows}</ul>
+      </div>`;
+    }).join('') : `<p class="scs-txn-empty">${game.i18n.localize('SCS.Log.Empty')}</p>`;
+
+    new Dialog({
+      title: game.i18n.format('SCS.Log.Title', { name: this.title }),
+      content: `<div class="scs-txn-log">${body}</div>`,
+      buttons: {
+        clear: {
+          icon: '<i class="fas fa-trash"></i>',
+          label: game.i18n.localize('SCS.Log.Clear'),
+          callback: () => this.actor.unsetFlag(MODULE_ID, FLAGS.TXN_LOG),
+        },
+        close: {
+          icon: '<i class="fas fa-times"></i>',
+          label: game.i18n.localize('SCS.Log.Close'),
+        },
+      },
+      default: 'close',
+    }, { width: 460, classes: ['dialog', 'scs-txn-dialog'] }).render(true);
   }
 
   // ── Share with players ─────────────────────────────────────────────────

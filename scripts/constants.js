@@ -36,6 +36,7 @@ export const FLAGS = Object.freeze({
   MARKUP:      'markup',      // number  — buy price multiplier (e.g. 1.2 = 120%)
   SELL_RATE:   'sellRate',    // number  — sell payout multiplier (e.g. 0.5 = 50%)
   THEME:       'theme',       // string  — per-actor theme override (optional)
+  TXN_LOG:     'txnLog',      // array   — transaction history (newest first, capped)
   // Item-level
   INFINITE:    'infinite',    // boolean — item never depletes
   PRICE_MODE:  'priceMode',   // 'auto' | 'fixed' — how base price is determined
@@ -43,7 +44,7 @@ export const FLAGS = Object.freeze({
   NO_SELL:     'noSell',      // boolean — exclude this item from the shop entirely
 });
 
-export const DEFAULT_MARKUP    = 1.2;
-export const DEFAULT_SELL_RATE = 0.5;
+export const DEFAULT_MARKUP    = 1.0;  // 100% — sell at base value
+export const DEFAULT_SELL_RATE = 0.5;  // 50% — buy from players at half value
 export const DEFAULT_ACTOR_IMG = 'icons/svg/mystery-man.svg';
 export const DEFAULT_ITEM_IMG  = 'icons/svg/item-bag.svg';

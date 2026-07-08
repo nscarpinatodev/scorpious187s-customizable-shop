@@ -73,8 +73,8 @@ export class ShopConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
       isShop: get(FLAGS.IS_SHOP, false),
       grantAccess: (this.actor.ownership?.default ?? 0) >= CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER,
       shopName: get(FLAGS.SHOP_NAME, ''),
-      markup: get(FLAGS.MARKUP, defaults?.markup ?? DEFAULT_MARKUP),
-      sellRate: get(FLAGS.SELL_RATE, defaults?.sellRate ?? DEFAULT_SELL_RATE),
+      markupPct: Math.round(get(FLAGS.MARKUP, defaults?.markup ?? DEFAULT_MARKUP) * 100),
+      sellRatePct: Math.round(get(FLAGS.SELL_RATE, defaults?.sellRate ?? DEFAULT_SELL_RATE) * 100),
       themeOverride: get(FLAGS.THEME, ''),
       themeChoices,
       items,
@@ -99,8 +99,9 @@ export class ShopConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const update = {
       [`flags.${MODULE_ID}.${FLAGS.IS_SHOP}`]: isShop,
       [`flags.${MODULE_ID}.${FLAGS.SHOP_NAME}`]: data.shopName?.trim() || '',
-      [`flags.${MODULE_ID}.${FLAGS.MARKUP}`]: Number(data.markup) || DEFAULT_MARKUP,
-      [`flags.${MODULE_ID}.${FLAGS.SELL_RATE}`]: Number(data.sellRate) || DEFAULT_SELL_RATE,
+      // UI works in percent; flags store the multiplier (100% → 1.0).
+      [`flags.${MODULE_ID}.${FLAGS.MARKUP}`]: (Number(data.markup) / 100) || DEFAULT_MARKUP,
+      [`flags.${MODULE_ID}.${FLAGS.SELL_RATE}`]: (Number(data.sellRate) / 100) || DEFAULT_SELL_RATE,
       [`flags.${MODULE_ID}.${FLAGS.THEME}`]: data.themeOverride || '',
     };
     await this.actor.update(update);

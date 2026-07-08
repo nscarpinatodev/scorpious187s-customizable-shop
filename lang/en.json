@@ -54,8 +54,8 @@
   "SCS.Config.Markup": "Buy Markup",
   "SCS.Config.SellRate": "Sell Rate",
   "SCS.Config.BaseValue": "base value",
-  "SCS.Config.MarkupHint": "Multiplier on base value when a player buys (e.g. 1.2 = 120%).",
-  "SCS.Config.SellRateHint": "Multiplier on base value when a player sells to this shop (e.g. 0.5 = 50%).",
+  "SCS.Config.MarkupHint": "Percentage of base value charged when a player buys (100% = base value).",
+  "SCS.Config.SellRateHint": "Percentage of base value paid when a player sells to this shop (50% = half value).",
   "SCS.Config.Items": "Items",
   "SCS.Config.EditCustomTheme": "Edit Custom Theme",
   "SCS.Config.Infinite": "Infinite",
@@ -103,5 +103,16 @@
   "SCS.Notify.Paid": "paid {amount} {cur}",
   "SCS.Notify.Received": "received {amount} {cur}",
   "SCS.Notify.EvenTrade": "even trade",
-  "SCS.Notify.Shared": "Shop opened for all players."
+  "SCS.Notify.Shared": "Shop opened for all players.",
+
+  "SCS.Log.Title": "Transaction Log — {name}",
+  "SCS.Log.Button": "Transaction Log",
+  "SCS.Log.Bought": "Bought",
+  "SCS.Log.Sold": "Sold",
+  "SCS.Log.NetPaid": "Net: buyer paid {amount} {cur}",
+  "SCS.Log.NetReceived": "Net: buyer received {amount} {cur}",
+  "SCS.Log.NetEven": "Net: even trade",
+  "SCS.Log.Empty": "No transactions recorded yet.",
+  "SCS.Log.Clear": "Clear Log",
+  "SCS.Log.Close": "Close"
 }

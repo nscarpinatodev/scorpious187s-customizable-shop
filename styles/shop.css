@@ -400,3 +400,57 @@
 
 /* ── Token HUD button ─────────────────────────────────────────────────────── */
 .scs-hud-shop i { line-height: inherit; }
+
+/* ── Transaction log (chat card + dialog) ─────────────────────────────────── */
+.scs-txn-card {
+  font-size: 0.9em;
+  line-height: 1.45;
+}
+.scs-txn-header {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.scs-txn-lines {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+}
+.scs-txn-line.buy  { color: var(--scs-buy,  #2e7d32); }
+.scs-txn-line.sell { color: var(--scs-sell, #b3261e); }
+.scs-txn-net {
+  font-weight: bold;
+  border-top: 1px solid rgba(128, 128, 128, 0.35);
+  padding-top: 3px;
+}
+.scs-txn-log {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scs-txn-entry {
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+.scs-txn-entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.scs-txn-when {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+.scs-txn-empty {
+  text-align: center;
+  font-style: italic;
+  opacity: 0.7;
+  margin: 12px 0;
+}
