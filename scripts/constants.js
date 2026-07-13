@@ -1,6 +1,7 @@
 export const MODULE_ID = 'scorpious187s-customizable-shop';
 export const MODULE_TITLE = "Scorpious187's Customizable Shop";
 export const SOCKET_NAME = `module.${MODULE_ID}`;
+export const LIB_ID = 'scorpious187s-lib';
 
 /** Shop interaction modes. */
 export const SHOP_MODE = Object.freeze({

@@ -3,7 +3,7 @@
  * Foundry VTT v13/v14
  */
 
-import { MODULE_ID, SOCKET_NAME, SOCKET_TYPES, FLAGS } from './constants.js';
+import { MODULE_ID, LIB_ID, SOCKET_NAME, SOCKET_TYPES, SETTINGS, FLAGS } from './constants.js';
 import { registerSettings, setShopSettingsApp } from './settings.js';
 import { registerHandlebarsHelpers, preloadTemplates } from './helpers.js';
 import { ThemeManager } from './theme-manager.js';
@@ -12,21 +12,67 @@ import { ShopConfigApp } from './apps/shop-config.js';
 import { ShopSettingsApp } from './apps/shop-settings.js';
 import { ThemeEditorApp } from './apps/theme-editor.js';
 
+// ── Theming registration (shared library) ───────────────────────────────────
+
+// Foundry's stylesheet overrides chrome with high-specificity rules; the
+// library punches through with inline !important var() references.
+const INLINE_BG_TARGETS = [
+  ['.scs-window',     'var(--scs-bg-secondary)', 'var(--scs-text-primary)'],
+  ['.scs-titlebar',   'var(--scs-bg-header)',    'var(--scs-text-header)'],
+  ['.scs-panel',      'var(--scs-bg-primary)',   null],
+  ['.scs-panel-body', 'var(--scs-bg-primary)',   null],
+];
+
+// Foundry refuses to activate the module without its required lib, but guard
+// against odd states (lib disabled mid-session, load-order bugs) anyway.
+let _libMissing = false;
+
 // ── Init ────────────────────────────────────────────────────────────────────
 
 Hooks.once('init', () => {
+  const lib = game.modules.get(LIB_ID)?.api;
+  if (!lib) {
+    _libMissing = true;
+    Hooks.once('ready', () => ui.notifications.error(
+      `${MODULE_ID} requires the "Scorpious187's Module Library" (${LIB_ID}) module. ` +
+      'Please install and enable it.'));
+    return;
+  }
+
   setShopSettingsApp(ShopSettingsApp);
   registerSettings();
   registerHandlebarsHelpers();
+
+  lib.theming.register({
+    moduleId: MODULE_ID,
+    prefix: '--scs-',
+    windowClass: 'scs-window',
+    datasetKey: 'scsTheme',
+    inlineTargets: INLINE_BG_TARGETS,
+  });
+
   console.log(`${MODULE_ID} | Initialized`);
 });
 
 // ── Ready ───────────────────────────────────────────────────────────────────
 
 Hooks.once('ready', async () => {
+  if (_libMissing) return;
   await preloadTemplates();
   ThemeManager.apply();
   Hooks.on('scs.themeChanged', (id) => ThemeManager.apply(id));
+
+  // The library's family theme is the authority. Mirror it into this module's
+  // legacy theme setting so older sibling releases (which read it directly)
+  // stay in sync. World write — primary GM only.
+  Hooks.on('s187lib.themeChanged', (id) => {
+    const primaryGM = game.users.filter(u => u.isGM && u.active)
+      .sort((a, b) => a.id.localeCompare(b.id))[0];
+    if (game.user.id !== primaryGM?.id) return;
+    if (game.settings.get(MODULE_ID, SETTINGS.THEME) !== id) {
+      game.settings.set(MODULE_ID, SETTINGS.THEME, id);
+    }
+  });
 
   // ── Socket relay: open-for-players + player→GM transaction execution ──
   game.socket.on(SOCKET_NAME, async (data) => {

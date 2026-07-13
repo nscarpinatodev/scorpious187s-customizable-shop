@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTINGS, DEFAULT_MARKUP, DEFAULT_SELL_RATE } from '../constants.js';
+import { MODULE_ID, LIB_ID, SETTINGS, DEFAULT_MARKUP, DEFAULT_SELL_RATE } from '../constants.js';
 import { getThemeChoices } from '../data/theme-presets.js';
 import { getCurrencyPresetList } from '../data/currency-presets.js';
 import { ThemeManager } from '../theme-manager.js';
@@ -34,7 +34,7 @@ export class ShopSettingsApp extends HandlebarsApplicationMixin(ApplicationV2) {
       currencyPresets: getCurrencyPresetList(),
       adjustMerchantCurrency: !!cfg?.adjustMerchantCurrency,
       layoutSide: cfg?.layoutSide === 'right' ? 'right' : 'left',
-      theme: game.settings.get(MODULE_ID, SETTINGS.THEME),
+      theme: ThemeManager.activeThemeId(),
       effectiveTheme: ThemeManager.resolveThemeId(),
       themeChoices: getThemeChoices(),
       themeLocked: ThemeManager.isControlledByQt(),
@@ -66,6 +66,9 @@ export class ShopSettingsApp extends HandlebarsApplicationMixin(ApplicationV2) {
       markup: (Number(data.markup) / 100) || DEFAULT_MARKUP,
       sellRate: (Number(data.sellRate) / 100) || DEFAULT_SELL_RATE,
     });
+    // The library's setting is the family-wide authority; this module's own
+    // setting is kept as a mirror for older sibling releases that read it.
+    await game.settings.set(LIB_ID, 'theme', data.theme);
     await game.settings.set(MODULE_ID, SETTINGS.THEME, data.theme);
     ThemeManager.apply(data.theme);
     ui.notifications.info(game.i18n.localize('SCS.Settings.Saved'));

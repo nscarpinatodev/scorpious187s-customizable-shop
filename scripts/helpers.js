@@ -1,21 +1,10 @@
-import { MODULE_ID } from './constants.js';
+import { MODULE_ID, LIB_ID } from './constants.js';
 
 /** Register Handlebars helpers used by SCS templates. */
 export function registerHandlebarsHelpers() {
-  Handlebars.registerHelper('scs-eq',  (a, b) => a === b);
-  Handlebars.registerHelper('scs-ne',  (a, b) => a !== b);
-  Handlebars.registerHelper('scs-or',  (a, b) => a || b);
-  Handlebars.registerHelper('scs-and', (a, b) => a && b);
-  Handlebars.registerHelper('scs-not', (a) => !a);
-  Handlebars.registerHelper('scs-gt',  (a, b) => a > b);
-  Handlebars.registerHelper('scs-abs', (a) => Math.abs(Number(a) || 0));
-
-  if (!Handlebars.helpers['concat']) {
-    Handlebars.registerHelper('concat', (...args) => {
-      args.pop();
-      return args.join('');
-    });
-  }
+  // scs-eq, scs-ne, scs-or, scs-and, scs-not, scs-gt, scs-abs, concat, ...
+  // come from the shared library.
+  game.modules.get(LIB_ID)?.api?.utils.registerHelpers('scs');
 }
 
 /** Pre-load all SCS Handlebars templates. */
