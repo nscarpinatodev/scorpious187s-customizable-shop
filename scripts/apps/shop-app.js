@@ -173,10 +173,30 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
     return true;
   }
 
+  /**
+   * Whether the owner currently has this item equipped/worn/held. Used to keep a
+   * merchant from accidentally selling gear off its own body. Equip state is
+   * stored differently per system, so we check the common shapes:
+   *   • pf2e / sf2e  — `item.isEquipped` getter (carryType held/worn)
+   *   • dnd5e / fallout / sfrpg — boolean `system.equipped`
+   *   • nested boolean `system.equipped.value`
+   */
+  static _isEquipped(item) {
+    if (typeof item.isEquipped === 'boolean') return item.isEquipped;
+    const eq = foundry.utils.getProperty(item, 'system.equipped');
+    if (eq === true) return true;
+    if (eq && typeof eq === 'object') {
+      if (eq.value === true) return true;
+      if (typeof eq.carryType === 'string') return ['held', 'worn'].includes(eq.carryType);
+    }
+    return false;
+  }
+
   /** Items the merchant offers for sale (buy mode source). */
   _merchantStock() {
     return this.actor.items
-      .filter(i => ShopApp._isMerchandise(i) && !i.getFlag(MODULE_ID, FLAGS.NO_SELL))
+      // Never offer gear the merchant has equipped/worn/held on its own body.
+      .filter(i => ShopApp._isMerchandise(i) && !ShopApp._isEquipped(i) && !i.getFlag(MODULE_ID, FLAGS.NO_SELL))
       .map(i => ({
         id: i.id,
         name: i.name,
@@ -720,6 +740,8 @@ export class ShopApp extends HandlebarsApplicationMixin(ApplicationV2) {
     for (const l of buys) {
       const item = merchant.items.get(l.itemId);
       if (!item) return { ok: false, message: game.i18n.format('SCS.Warn.GoneStock', { name: l.itemId }) };
+      // Guard: the merchant may have equipped this item after it entered the cart.
+      if (ShopApp._isEquipped(item)) return { ok: false, message: game.i18n.format('SCS.Warn.Equipped', { name: item.name }) };
       const infinite = !!item.getFlag(MODULE_ID, FLAGS.INFINITE);
       if (!infinite && ShopApp._quantity(item) < l.qty)
         return { ok: false, message: game.i18n.format('SCS.Warn.StockLimit', { name: item.name, max: ShopApp._quantity(item) }) };

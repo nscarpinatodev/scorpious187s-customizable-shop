@@ -93,6 +93,7 @@
   "SCS.Warn.StockLimit": "Only {max} of {name} available.",
   "SCS.Warn.NoBuyer": "No character selected — select a token or assign a character.",
   "SCS.Warn.GoneStock": "{name} is no longer in stock.",
+  "SCS.Warn.Equipped": "{name} is equipped by the merchant and isn't for sale.",
   "SCS.Warn.SellGone": "You no longer have enough {name} to sell.",
   "SCS.Warn.CantAfford": "Not enough currency to complete this deal.",
   "SCS.Warn.NoGM": "No GM is online to process the transaction.",
